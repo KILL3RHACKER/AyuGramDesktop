@@ -54,6 +54,25 @@ jobs:
           echo "$(sha256sum $TBUILD/$REPO_NAME/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
           echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
 
+      - name: Expand Pagefile
+        shell: pwsh
+        run: |
+          try {
+            $ComputerSystem = Get-CimInstance Win32_ComputerSystem
+            $ComputerSystem.AutomaticManagedPagefile = $False
+            Set-CimInstance -CimInstance $ComputerSystem
+            $PageFile = Get-CimInstance Win32_PageFileSetting | Where-Object { $_.Name -like 'C:*' }
+            if ($PageFile) {
+              $PageFile.InitialSize = 16384
+              $PageFile.MaximumSize = 32768
+              Set-CimInstance -CimInstance $PageFile
+            } else {
+              New-CimInstance -ClassName Win32_PageFileSetting -Property @{ Name = "C:\pagefile.sys"; InitialSize = 16384; MaximumSize = 32768 }
+            }
+          } catch {
+            Write-Host "Pagefile expansion warning: $_"
+          }
+
       - name: Setup MSVC Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -119,7 +138,7 @@ jobs:
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
 
-          cmake --build ..\out --config Release --target Telegram --parallel
+          cmake --build ..\out --config Release --target Telegram --parallel 2 -- /m:2 /p:TrackFileAccess=false
 
       - name: Package portable build
         shell: bash

@@ -7,6 +7,10 @@
 add_executable(Telegram WIN32 MACOSX_BUNDLE)
 init_non_host_target(Telegram)
 
+if (MSVC)
+    add_compile_options(/FS /Zm200)
+endif()
+
 add_subdirectory(lib_rpl)
 add_subdirectory(lib_crl)
 add_subdirectory(lib_base)
