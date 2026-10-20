@@ -261,9 +261,8 @@ void ResolveDocument(
 			return false;
 		}
 		if (controller
-			&& document->filename().endsWith(
-				u".plugin"_q,
-				Qt::CaseInsensitive)
+			&& (document->filename().endsWith(u".plugin"_q, Qt::CaseInsensitive)
+				|| document->filename().endsWith(u".lua"_q, Qt::CaseInsensitive))
 			&& !document->filepath(true).isEmpty()) {
 			const auto path = document->location(true).name();
 			auto file = QFile(path);

@@ -111,6 +111,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtGui/QGuiApplication>
 
 // AyuGram includes
+#include "ayu/features/plugins/plugin_manager.h"
 #include "ayu/ui/ayu_userpic.h"
 #include "ayu/utils/telegram_helpers.h"
 
@@ -777,8 +778,11 @@ void TopBar::adjustColors(const std::optional<QColor> &edgeColor) {
 void TopBar::updateCollectibleStatus() {
 	const auto collectible = effectiveCollectible();
 	const auto colorProfile = effectiveColorProfile();
+	const auto bareId = _peer->id.value & PeerId::kChatTypeMask;
+	const auto customStyle = AyuPlugins::PluginManager::Instance().getProfileStyle(bareId);
 	_hasGradientBg = (collectible != nullptr)
-		|| (colorProfile && colorProfile->bg.size() > 1);
+		|| (colorProfile && colorProfile->bg.size() > 1)
+		|| (customStyle && customStyle->hasGradient);
 	_solidBg = (colorProfile && colorProfile->bg.size() == 1)
 		? std::make_optional(colorProfile->bg.front())
 		: std::nullopt;
@@ -2932,12 +2936,21 @@ void TopBar::paintEvent(QPaintEvent *e) {
 	if (_hasGradientBg && _cachedGradient.isNull()) {
 		const auto collectible = effectiveCollectible();
 		const auto colorProfile = effectiveColorProfile();
+		const auto bareId = _peer->id.value & PeerId::kChatTypeMask;
+		const auto customStyle = AyuPlugins::PluginManager::Instance().getProfileStyle(bareId);
 		const auto offset = QPoint(
 			0,
 			_hasActions
 				? -st::infoProfileTopBarPhotoBgShift
 				: -st::infoProfileTopBarPhotoBgNoActionsShift);
-		if (collectible) {
+		if (customStyle && customStyle->hasGradient) {
+			_cachedGradient = Ui::CreateTopBgGradient(
+				QSize(width(), maximumHeight()),
+				customStyle->gradientColor2,
+				customStyle->gradientColor1,
+				false,
+				offset);
+		} else if (collectible) {
 			_cachedGradient = Ui::CreateTopBgGradient(
 				QSize(width(), maximumHeight()),
 				collectible->centerColor,

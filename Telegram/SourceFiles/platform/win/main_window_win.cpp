@@ -772,6 +772,12 @@ void MainWindow::validateWindowTheme(bool native, bool night) {
 				kDWMWA_USE_IMMERSIVE_DARK_MODE,
 				&darkValue,
 				sizeof(darkValue));
+			if (kSystemVersion.microVersion() >= 22000) {
+				const auto backdrop = DWORD(2);
+				const auto corner = DWORD(2);
+				DwmSetWindowAttribute(_hWnd, 38, &backdrop, sizeof(backdrop));
+				DwmSetWindowAttribute(_hWnd, 33, &corner, sizeof(corner));
+			}
 		}
 	};
 

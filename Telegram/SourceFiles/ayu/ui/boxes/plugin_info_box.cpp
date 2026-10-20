@@ -6,6 +6,7 @@
 // Copyright @Radolyn, 2026
 #include "ayu/ui/boxes/plugin_info_box.h"
 
+#include "ayu/features/plugins/plugin_manager.h"
 #include "apiwrap.h"
 #include "ayu/ayu_url_handlers.h"
 #include "core/file_utilities.h"
@@ -415,12 +416,29 @@ void FillPluginInfoBox(
 
 	Ui::AddSkip(box->verticalLayout());
 
-	box->verticalLayout()->add(
-		object_ptr<Ui::FlatLabel>(
-			box->verticalLayout(),
-			tr::ayu_PluginsNotAvailable(),
-			st::boxDividerLabel),
-		st::boxRowPadding);
+	const auto isInstalled = AyuPlugins::PluginManager::Instance().isInstalled(metadata.id);
+	if (isInstalled) {
+		box->addButton(
+			rpl::single(u"Удалить плагин"_q),
+			[=] {
+				AyuPlugins::PluginManager::Instance().unloadPlugin(metadata.id);
+				controller->showToast(u"Плагин удален"_q);
+				box->closeBox();
+			});
+	} else {
+		box->addButton(
+			rpl::single(u"Установить плагин"_q),
+			[=] {
+				const auto targetPath = AyuPlugins::PluginManager::Instance().pluginsDirectory()
+					+ metadata.id
+					+ u".lua"_q;
+				QFile::remove(targetPath);
+				QFile::copy(pluginPath, targetPath);
+				AyuPlugins::PluginManager::Instance().loadPlugin(targetPath);
+				controller->showToast(u"Плагин установлен и активирован!"_q);
+				box->closeBox();
+			});
+	}
 
 	Ui::AddSkip(box->verticalLayout());
 
