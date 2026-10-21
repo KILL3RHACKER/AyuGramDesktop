@@ -15,6 +15,7 @@ jobs:
     env:
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
       Platform: "x64"
+      PreferredToolArchitecture: "x64"
 
     defaults:
       run:
@@ -51,6 +52,7 @@ jobs:
       - name: Setup environment
         shell: bash
         run: |
+          sed -i 's/-T v143/-T v143,host=x64/g' $TBUILD/$REPO_NAME/cmake/run_cmake.py
           echo "$(sha256sum $TBUILD/$REPO_NAME/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
           echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
 
@@ -138,7 +140,7 @@ jobs:
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
 
-          cmake --build ..\out --config Release --target Telegram --parallel 2 -- /m:2 /p:TrackFileAccess=false
+          cmake --build ..\out --config Release --target Telegram --parallel 2 -- /m:2 /p:PreferredToolArchitecture=x64 /p:TrackFileAccess=false
 
       - name: Package portable build
         shell: bash
